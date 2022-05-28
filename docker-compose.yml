@@ -1,0 +1,58 @@
+  version: "3.3"
+
+  services:
+      redis:
+        image: redis:alpine
+        container_name: redis
+
+      db:
+        image: postgres
+        container_name: postgres_db
+        healthcheck:
+          test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+          interval: 5s
+          timeout: 5s
+          retries: 5
+        environment:
+          - POSTGRES_DB=postgres
+          - POSTGRES_USER=postgres
+          - POSTGRES_PASSWORD=postgres
+        volumes:
+          - ./data/db:/var/lib/postgresql/data
+
+      app:
+          build: .
+          container_name: django_app
+          command: >
+             sh -c "sleep 8 && python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+          volumes:
+            - .:/django
+          ports:
+            - "8000:8000"
+          image: app:django
+          environment:
+            - DEBUG=1
+            - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+            - CELERY_BROKER=redis://redis:6379/0
+            - CELERY_BACKEND=redis://redis:6379/0
+          depends_on:
+            - db
+            - redis
+      celery:
+          restart: always
+          build:
+            context: .
+          command: celery -A core worker -B -l DEBUG
+          volumes:
+            - .:/django
+          environment:
+            - DEBUG=1
+            - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+            - CELERY_BROKER=redis://redis:6379/0
+            - CELERY_BACKEND=redis://redis:6379/0
+          depends_on:
+            - db
+            - redis
+            - app
