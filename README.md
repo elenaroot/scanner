@@ -34,7 +34,7 @@ curl --location --request POST 'http://127.0.0.1:8000/scanner/scans/' \
 Response:<br>
 &ensp;&emsp;![Screenshot](images/scan_accepted.png)
 * <http://127.0.0.1:8000/scanner/scans/{id}> <br> 
-GET state of the scan
+GET state of the scan <br>
 ![Screenshot](images/scan_detail.png)
 
 ### How are we optimizing
